@@ -86,7 +86,7 @@ class MyCL_Model(Model):
         
         # Classifier
         self.classifier = Dense(num_classes, activation='softmax', name='classifier')
-
+        
     def call(self, inputs, training=None):
         # Extract spatial features
         x = self.encoder(inputs, training=training)

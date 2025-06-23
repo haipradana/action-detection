@@ -10,8 +10,7 @@ from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
 from data_gen import DataGenerator
 from model import MyCL_Model
 
-# Ensure TensorFlow 2.x behavior
-tf.compat.v1.disable_eager_execution() if hasattr(tf.compat.v1, 'disable_eager_execution') else None
+# Ensure TensorFlow 2.x behavior (eager execution enabled by default)
 
 # ### Paths
 
@@ -54,7 +53,7 @@ for epoch in range(epochs):
     # Training
     train_loss = 0.0
     train_acc = 0.0
-    
+
     for batch_idx in range(len(train_data)):
         try:
             batch_generator = train_data[batch_idx]

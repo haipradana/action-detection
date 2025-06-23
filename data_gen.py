@@ -8,7 +8,7 @@ from tensorflow.keras.preprocessing.sequence import TimeseriesGenerator
 
 class DataGenerator(Sequence):
     
-    def __init__(self, x_path, y_path=None, to_fit=True, seq_len=30, batch_size=4, **kwargs):
+    def __init__(self, x_path, y_path=None, to_fit=True, seq_len=15, batch_size=2, **kwargs):
         super().__init__(**kwargs)
         self.x_path = x_path        
         self.batch_size = batch_size
@@ -53,6 +53,19 @@ class DataGenerator(Sequence):
             img_path = os.path.join(images_folder_path, img)
             frame = cv2.imread(img_path)
             if frame is not None:
+                # Center crop to square then resize (preserves important center content)
+                h, w = frame.shape[:2]
+                if h > w:
+                    # Crop height to match width (make square)
+                    start_h = (h - w) // 2
+                    frame = frame[start_h:start_h + w, :]
+                else:
+                    # Crop width to match height (make square)
+                    start_w = (w - h) // 2
+                    frame = frame[:, start_w:start_w + h]
+                
+                # Now resize square image to 224x224
+                frame = cv2.resize(frame, (224, 224))
                 # Convert BGR to RGB and normalize to [0, 1]
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 frame = frame.astype(np.float32) / 255.0

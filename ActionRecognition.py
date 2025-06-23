@@ -24,8 +24,8 @@ y_val_path = 'val_y.pkl'
 
 # ### Create Train and Validation Data Generator objects
 
-train_data = DataGenerator(x_train_path, y_path=y_train_path)
-val_data = DataGenerator(x_val_path, y_path=y_val_path)
+train_data = DataGenerator(x_train_path, y_path=y_train_path, seq_len=15, batch_size=1)
+val_data = DataGenerator(x_val_path, y_path=y_val_path, seq_len=15, batch_size=1)
 
 # ### Define and Compile Model
 
@@ -109,7 +109,7 @@ y_test_path = 'test_y.pkl'
 
 # ### Create Test Data Generator Object
 
-test_data = DataGenerator(x_test_path, y_path=y_test_path)
+test_data = DataGenerator(x_test_path, y_path=y_test_path, seq_len=15, batch_size=1)
 
 # ### Test the model
 

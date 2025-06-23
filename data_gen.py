@@ -8,7 +8,7 @@ from tensorflow.keras.preprocessing.sequence import TimeseriesGenerator
 
 class DataGenerator(Sequence):
     
-    def __init__(self, x_path, y_path=None, to_fit=True, seq_len=15, batch_size=2, **kwargs):
+    def __init__(self, x_path, y_path=None, to_fit=True, seq_len=15, batch_size=1, **kwargs):
         super().__init__(**kwargs)
         self.x_path = x_path        
         self.batch_size = batch_size
@@ -64,7 +64,7 @@ class DataGenerator(Sequence):
                     start_w = (w - h) // 2
                     frame = frame[:, start_w:start_w + h]
                 
-                # Now resize square image to 224x224
+                # Standard size for computer vision
                 frame = cv2.resize(frame, (224, 224))
                 # Convert BGR to RGB and normalize to [0, 1]
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)

@@ -84,8 +84,8 @@ class MyCL_Model(Model):
         self.dropout_2 = Dropout(dropout_rate, name='dropout_2')
         self.dense_2 = Dense(64, activation='relu', name='dense_2')
         
-        # Classifier
-        self.classifier = Dense(num_classes, activation='softmax', name='classifier')
+        # Classifier with float32 output for mixed precision
+        self.classifier = Dense(num_classes, activation='softmax', name='classifier', dtype='float32')
         
     def call(self, inputs, training=None):
         # Extract spatial features

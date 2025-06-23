@@ -6,9 +6,29 @@
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
+import gc
 
 from data_gen import DataGenerator
-from model import MyCL_Model
+from model import MyCL_Model, SimpleConvLSTM
+
+# Multi-GPU Setup + Memory management
+physical_devices = tf.config.experimental.list_physical_devices('GPU')
+print(f"🔥 Found {len(physical_devices)} GPU(s): {[d.name for d in physical_devices]}")
+
+# Enable memory growth for all GPUs
+for gpu in physical_devices:
+    tf.config.experimental.set_memory_growth(gpu, True)
+
+# Multi-GPU Strategy
+strategy = tf.distribute.MirroredStrategy()
+print(f"🚀 Using MirroredStrategy with {strategy.num_replicas_in_sync} GPUs")
+
+# Enable mixed precision (saves ~40% memory)
+policy = tf.keras.mixed_precision.Policy('mixed_float16')
+tf.keras.mixed_precision.set_global_policy(policy)
+
+tf.keras.backend.clear_session()
+gc.collect()
 
 # Ensure TensorFlow 2.x behavior (eager execution enabled by default)
 
@@ -24,17 +44,22 @@ y_val_path = 'val_y.pkl'
 
 # ### Create Train and Validation Data Generator objects
 
-train_data = DataGenerator(x_train_path, y_path=y_train_path, seq_len=15, batch_size=1)
-val_data = DataGenerator(x_val_path, y_path=y_val_path, seq_len=15, batch_size=1)
+# Increase batch size with 2x GPU power
+train_data = DataGenerator(x_train_path, y_path=y_train_path, seq_len=15, batch_size=2)
+val_data = DataGenerator(x_val_path, y_path=y_val_path, seq_len=15, batch_size=2)
 
-# ### Define and Compile Model
+# ### Define and Compile Model (Multi-GPU)
 
-model = MyCL_Model()
-model.compile(
-    loss='sparse_categorical_crossentropy', 
-    optimizer=tf.keras.optimizers.Adam(learning_rate=0.001), 
-    metrics=['accuracy']
-)
+# Create model within strategy scope for multi-GPU
+with strategy.scope():
+    # Use original model with mixed precision optimization
+    model = MyCL_Model(num_classes=6, dropout_rate=0.2)
+    model.compile(
+        loss='sparse_categorical_crossentropy', 
+        optimizer=tf.keras.optimizers.Adam(learning_rate=0.001), 
+        metrics=['accuracy']
+    )
+    print("✅ Model created and compiled for multi-GPU training")
 
 # ### Setup callbacks
 callbacks = [
@@ -54,20 +79,31 @@ for epoch in range(epochs):
     train_loss = 0.0
     train_acc = 0.0
 
+    # Multi-GPU training approach
     for batch_idx in range(len(train_data)):
         try:
             batch_generator = train_data[batch_idx]
-            # Use fit() instead of deprecated fit_generator()
+            
+            # Use model.fit for proper multi-GPU handling
             history = model.fit(
                 batch_generator,
                 epochs=1,
-                verbose=0
+                verbose=0,
+                workers=1,
+                use_multiprocessing=False
             )
+            
             train_loss += history.history['loss'][0]
             train_acc += history.history['accuracy'][0]
+            
         except Exception as e:
             print(f"Error in training batch {batch_idx}: {e}")
             continue
+        
+        # Memory cleanup every 5 batches (more frequent for multi-GPU)
+        if batch_idx % 5 == 0:
+            gc.collect()
+            print(f"📊 Processed {batch_idx}/{len(train_data)} training batches")
     
     # Calculate average training metrics
     if len(train_data) > 0:
@@ -109,7 +145,7 @@ y_test_path = 'test_y.pkl'
 
 # ### Create Test Data Generator Object
 
-test_data = DataGenerator(x_test_path, y_path=y_test_path, seq_len=15, batch_size=1)
+test_data = DataGenerator(x_test_path, y_path=y_test_path, seq_len=15, batch_size=2)
 
 # ### Test the model
 

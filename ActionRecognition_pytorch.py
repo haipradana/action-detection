@@ -226,9 +226,19 @@ class ActionRecognitionModel(nn.Module):
         self.conv3d_2 = Conv3DBlock(16, 32, kernel_size=(1, 5, 5))
         self.conv3d_3 = Conv3DBlock(32, 64, kernel_size=(1, 3, 3))
         
-        # ConvLSTM layer (using 2D ConvLSTM)
+        # Calculate the correct input size for LSTM after conv layers
+        # Input image: 224x224
+        # After conv3d_1: 224/2 = 112x112 (due to stride=2 in maxpool)
+        # After conv3d_2: 112/2 = 56x56
+        # After conv3d_3: 56/2 = 28x28
+        # But actually it's different due to conv operations, let's use adaptive pooling
+        
+        # Add adaptive pooling to ensure consistent dimensions
+        self.adaptive_pool = nn.AdaptiveAvgPool2d((7, 7))  # Fixed size output
+        
+        # ConvLSTM layer (using 2D LSTM)
         self.convlstm = nn.LSTM(
-            input_size=64 * 28 * 28,  # Flattened spatial features
+            input_size=64 * 7 * 7,  # Fixed: 64 channels * 7 * 7 spatial
             hidden_size=128,
             num_layers=1,
             batch_first=True,
@@ -256,10 +266,19 @@ class ActionRecognitionModel(nn.Module):
         x = self.conv3d_2(x)  # (batch, 32, seq_len, H/4, W/4)
         x = self.conv3d_3(x)  # (batch, 64, seq_len, H/8, W/8)
         
-        # Reshape for LSTM: (batch, seq_len, features)
+        # Get dimensions after conv layers
         _, C_new, T_new, H_new, W_new = x.shape
+        
+        # Apply adaptive pooling to each frame independently
+        # Reshape to (batch*seq_len, channels, height, width)
         x = x.permute(0, 2, 1, 3, 4)  # (batch, seq_len, channels, H, W)
-        x = x.contiguous().view(batch_size, T_new, -1)  # (batch, seq_len, features)
+        x = x.contiguous().view(batch_size * T_new, C_new, H_new, W_new)
+        
+        # Apply adaptive pooling
+        x = self.adaptive_pool(x)  # (batch*seq_len, 64, 7, 7)
+        
+        # Reshape back to sequence format: (batch, seq_len, features)
+        x = x.view(batch_size, T_new, -1)  # (batch, seq_len, 64*7*7)
         
         # LSTM for temporal modeling
         lstm_out, (hidden, _) = self.convlstm(x)
@@ -278,6 +297,19 @@ model = model.to(device)
 total_params = sum(p.numel() for p in model.parameters())
 trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
 print(f"📊 Model parameters: {total_params:,} total, {trainable_params:,} trainable")
+
+# Test model with dummy input to verify dimensions
+print("🧪 Testing model dimensions...")
+with torch.no_grad():
+    dummy_input = torch.randn(1, seq_len, 3, img_size, img_size).to(device)
+    try:
+        dummy_output = model(dummy_input)
+        print(f"✅ Model test successful!")
+        print(f"   Input shape: {dummy_input.shape}")
+        print(f"   Output shape: {dummy_output.shape}")
+    except Exception as e:
+        print(f"❌ Model test failed: {e}")
+        raise e
 
 # ===================================================================
 # CELL 5: Data Loading

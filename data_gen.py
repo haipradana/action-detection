@@ -87,7 +87,7 @@ class DataGenerator(Sequence):
                 else:
                     raise KeyError(f"Key '{key}' not found in labels. Available keys: {list(self.dict_Y.keys())[:5]}...")
             
-            Y = np.array(self.dict_Y[key])
+        Y = np.array(self.dict_Y[key])
             all_frames, targets = self.check_alignment(all_frames, Y)
             
             # Create time series generator
@@ -116,9 +116,9 @@ class DataGenerator(Sequence):
             raise FileNotFoundError(f"Label file {path} not found")
         
         try:
-            with open(path, 'rb') as pickle_file:
-                y_dict = pickle.load(pickle_file)
-            return y_dict
+        with open(path, 'rb') as pickle_file:
+            y_dict = pickle.load(pickle_file)
+        return y_dict 
         except Exception as e:
             raise ValueError(f"Error loading pickle file {path}: {e}")
     

@@ -1,7 +1,7 @@
 import os
 import glob
 import argparse
-from cv2 import cv2
+import cv2
 import numpy as np
 import pandas as pd
 from scipy.io import loadmat

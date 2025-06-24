@@ -230,7 +230,7 @@ def main():
             
             np.save(f'{flow_clips_dir}/flow_clip_{j}', flow_data)
             
-            df = df.append({'name' : f'clip_{j}' , 'class' : index+1}, ignore_index=True) 
+            df = pd.concat([df, pd.DataFrame([{'name' : f'clip_{j}' , 'class' : index+1}])], ignore_index=True) 
             j += 1
             total_clips_saved += 1
         else:

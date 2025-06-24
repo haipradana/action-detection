@@ -108,6 +108,7 @@ def cv2npy(video):
   clip_mat.append(old_frame)
   
   frame_count = 1
+  fps_skip = 3  # Skip every 3rd frame (30fps -> 10fps)
   while cap.isOpened():
       
       ret, frame = cap.read()
@@ -115,6 +116,11 @@ def cv2npy(video):
       if not ret:
           print('Stream end.\n')
           break    
+      
+      # FPS Reduction: Only process every 3rd frame
+      if frame_count % fps_skip != 0:
+          frame_count += 1
+          continue
       
       # Fill in video array.
       frame = crop_center_square(frame)
@@ -217,16 +223,21 @@ def main():
     action_data = loadmat(action_file)
 
     total_clips_saved = 0
+    fps_skip = 3  # Same as above
     for index, value in enumerate(action_data['tlabs']):
       #print(value[0])
       for start, stop in value[0]:
-        if start < len(clip_mat) and stop <= len(clip_mat) and start < stop:
-          clip_data = clip_mat[start:stop, ...]
-          flow_data = flow_clip_mat[start:stop, ...]
+        # Adjust frame indices for FPS reduction
+        start_adjusted = start // fps_skip
+        stop_adjusted = stop // fps_skip
+        
+        if start_adjusted < len(clip_mat) and stop_adjusted <= len(clip_mat) and start_adjusted < stop_adjusted:
+          clip_data = clip_mat[start_adjusted:stop_adjusted, ...]
+          flow_data = flow_clip_mat[start_adjusted:stop_adjusted, ...]
           
           if len(clip_data) > 0:  # Only save non-empty clips
             np.save(f'{clips_dir}/clip_{j}', clip_data)
-            print(f"   Saved clip_{j}: {clip_data.shape} (frames {start}-{stop}, class {index+1})")
+            print(f"   Saved clip_{j}: {clip_data.shape} (frames {start_adjusted}-{stop_adjusted}, class {index+1})")
             
             np.save(f'{flow_clips_dir}/flow_clip_{j}', flow_data)
             
@@ -234,7 +245,7 @@ def main():
             j += 1
             total_clips_saved += 1
         else:
-          print(f"   ⚠️ Invalid clip bounds: {start}-{stop} (video length: {len(clip_mat)})")
+          print(f"   ⚠️ Invalid clip bounds: {start_adjusted}-{stop_adjusted} (video length: {len(clip_mat)})")
 
     df.to_csv(f'dataframes/dataframe_{i}.csv', index=False)
     print(f"✅ Video {i} complete: {total_clips_saved} clips saved")

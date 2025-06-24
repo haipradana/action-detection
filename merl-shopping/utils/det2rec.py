@@ -25,17 +25,36 @@ def data_info(labels_path, videos_path):
           print(element)
   print('\n')
   
-  # Updated paths to work with new structure
-  actions = glob.glob(os.path.join(labels_path, '*.mat'))
-  videos = glob.glob(os.path.join(videos_path, '*.mp4'))
+  # Updated paths to work with HuggingFace structure (with train/val/test subfolders)
+  actions = []
+  videos = []
+  
+  # Search in all subfolders (train, val, test)
+  for subfolder in ['train', 'val', 'test']:
+    label_subfolder = os.path.join(labels_path, subfolder)
+    video_subfolder = os.path.join(videos_path, subfolder)
+    
+    if os.path.exists(label_subfolder):
+      actions.extend(glob.glob(os.path.join(label_subfolder, '*.mat')))
+    
+    if os.path.exists(video_subfolder):
+      videos.extend(glob.glob(os.path.join(video_subfolder, '*.mp4')))
+  
+  # Also check if files are directly in the main folders (fallback)
+  if not actions:
+    actions = glob.glob(os.path.join(labels_path, '*.mat'))
+  if not videos:
+    videos = glob.glob(os.path.join(videos_path, '*.mp4'))
 
   if not actions:
     print(f"⚠️ No .mat files found in {labels_path}")
+    print("Checked subfolders: train/, val/, test/ and main folder")
     print("Make sure you have the MERL labels dataset extracted")
     return [], []
     
   if not videos:
     print(f"⚠️ No .mp4 files found in {videos_path}")
+    print("Checked subfolders: train/, val/, test/ and main folder")
     print("Make sure you have the MERL videos dataset extracted")
     return [], []
   

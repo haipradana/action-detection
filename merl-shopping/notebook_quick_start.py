@@ -53,13 +53,42 @@ print("📁 Dataset Structure:")
 print(f"Videos path exists: {os.path.exists(videos_path)}")
 print(f"Labels path exists: {os.path.exists(labels_path)}")
 
+# Check for files in subfolders (train/val/test) and main folder
+video_files = []
+label_files = []
+
 if os.path.exists(videos_path):
-    video_files = glob.glob(os.path.join(videos_path, "*.mp4"))
+    for subfolder in ['train', 'val', 'test']:
+        subfolder_path = os.path.join(videos_path, subfolder)
+        if os.path.exists(subfolder_path):
+            video_files.extend(glob.glob(os.path.join(subfolder_path, "*.mp4")))
+    
+    # Fallback: check main folder
+    if not video_files:
+        video_files = glob.glob(os.path.join(videos_path, "*.mp4"))
+    
     print(f"✅ Found {len(video_files)} video files")
 
 if os.path.exists(labels_path):
-    label_files = glob.glob(os.path.join(labels_path, "*.mat"))
+    for subfolder in ['train', 'val', 'test']:
+        subfolder_path = os.path.join(labels_path, subfolder)
+        if os.path.exists(subfolder_path):
+            label_files.extend(glob.glob(os.path.join(subfolder_path, "*.mat")))
+    
+    # Fallback: check main folder
+    if not label_files:
+        label_files = glob.glob(os.path.join(labels_path, "*.mat"))
+    
     print(f"✅ Found {len(label_files)} label files")
+
+# Show subfolder structure
+print("\\n📂 Subfolder structure:")
+for path_name, path in [("Videos", videos_path), ("Labels", labels_path)]:
+    if os.path.exists(path):
+        subfolders = [d for d in os.listdir(path) if os.path.isdir(os.path.join(path, d))]
+        print(f"   {path_name}: {subfolders}")
+    else:
+        print(f"   {path_name}: Not found")
 """)
 
 # =====================================

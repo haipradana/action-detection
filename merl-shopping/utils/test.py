@@ -18,7 +18,17 @@ def data_info(labels_path):
           print(element)
   print('\n')
   
-  actions = glob.glob(os.path.join(labels_path, '*.mat'))
+  # Search for .mat files in subfolders (train/val/test) and main folder
+  actions = []
+  for subfolder in ['train', 'val', 'test']:
+    label_subfolder = os.path.join(labels_path, subfolder)
+    if os.path.exists(label_subfolder):
+      actions.extend(glob.glob(os.path.join(label_subfolder, '*.mat')))
+  
+  # Fallback: check main folder
+  if not actions:
+    actions = glob.glob(os.path.join(labels_path, '*.mat'))
+  
   dataframes = glob.glob('dataframes/*.csv')
 
   print(f"Found {len(actions)} label files")
@@ -26,6 +36,7 @@ def data_info(labels_path):
   
   if not actions:
     print(f"❌ No .mat files found in {labels_path}")
+    print("Checked subfolders: train/, val/, test/ and main folder")
     return [], [], []
   
   class_distribution = [0]*5

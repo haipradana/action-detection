@@ -52,14 +52,34 @@ def check_dataset_paths():
     paths_exist = True
     
     if os.path.exists(labels_path):
-        label_files = [f for f in os.listdir(labels_path) if f.endswith('.mat')]
+        # Check for .mat files in subfolders and main folder
+        label_files = []
+        for subfolder in ['train', 'val', 'test']:
+            subfolder_path = os.path.join(labels_path, subfolder)
+            if os.path.exists(subfolder_path):
+                label_files.extend([f for f in os.listdir(subfolder_path) if f.endswith('.mat')])
+        
+        # Fallback: check main folder
+        if not label_files:
+            label_files = [f for f in os.listdir(labels_path) if f.endswith('.mat')]
+        
         print(f"   ✅ Labels: {labels_path} ({len(label_files)} .mat files)")
     else:
         print(f"   ❌ Labels: {labels_path} not found")
         paths_exist = False
     
     if os.path.exists(videos_path):
-        video_files = [f for f in os.listdir(videos_path) if f.endswith('.mp4')]
+        # Check for .mp4 files in subfolders and main folder
+        video_files = []
+        for subfolder in ['train', 'val', 'test']:
+            subfolder_path = os.path.join(videos_path, subfolder)
+            if os.path.exists(subfolder_path):
+                video_files.extend([f for f in os.listdir(subfolder_path) if f.endswith('.mp4')])
+        
+        # Fallback: check main folder
+        if not video_files:
+            video_files = [f for f in os.listdir(videos_path) if f.endswith('.mp4')]
+        
         print(f"   ✅ Videos: {videos_path} ({len(video_files)} .mp4 files)")
     else:
         print(f"   ❌ Videos: {videos_path} not found")

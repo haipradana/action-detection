@@ -76,13 +76,12 @@ def main():
     try:
       df = pd.read_csv(df_file)
       total_clips += len(df)
-      temp = df['class'].value_counts().reset_index()
       
-      for j in range(len(temp)):
-        class_idx = temp.at[j, 'index'] - 1  # Convert to 0-indexed
-        class_count = temp.at[j, 'class']
+      # Count classes directly from the 'class' column (1-indexed in CSV)
+      for class_val in df['class']:
+        class_idx = int(class_val) - 1  # Convert to 0-indexed
         if 0 <= class_idx < 5:
-          class_distribution[class_idx] += class_count
+          class_distribution[class_idx] += 1
       
       print(f"   📄 {df_file}: {len(df)} clips")
       
